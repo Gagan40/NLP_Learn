@@ -23,17 +23,56 @@ def brown_words(new):
     for words in new:
         new_list.append(words)
     return new_list
-brown_words(new=brown.words(categories='editorial'))
+total_words=brown_words(new=brown.words(categories='editorial'))
 
 print(len(brown_words(new=brown.words(categories='editorial'))))
 
 
-brown_words(new=brown.words(categories='news'))
+set(brown_words(new=brown.words(categories='news')))
 
 print(len(brown_words(new=brown.words(categories='news'))))
 
-# We can see the no of words for different categories as here with our function we can analysis the keywords news and categories. 
+print(len(set(total_words)))
+    
+''' 
+There are 61604 words are in "editorial "category from which around 9890 words are unique
+And  1000554 total words in " news category" from which around 14394 words are unique
+'''
+'''
+The Brown Corpus is a convenient resource for studying systematic differences between genres, 
+a kind of linguistic inquiry known as stylistics. 
+Let's compare genres in their usage of modal verbs. 
+The first step is to produce the counts for a particular genre.
+'''
+import nltk
+news_text=brown.words(categories='news')
+fdist=nltk.FreqDist(w.lower() for w in news_text)
+model=['can', 'could','may','might','must','will']
+for m in model:
+    print(m + ':', fdist[m], end=' ')
+
+'''
+we need to obtain counts for each genre of interest.
+We'll use NLTK's support for conditional frequency distribution
+''' 
+model1=['When','where','why','is','are']
+
+cfd=nltk.ConditionalFreqDist((genre,word)
+for genre in brown.categories() for word in brown.words(categories=genre))
+genre=['news','religion','hobbies','science_fiction','romance','humor']
+model=['can', 'could','may','might','must','will']
+#model1=['When','where','why','is','are']
+cfd.tabulate(conditions=genre,samples=model)
+
+
+
+
+
+
 
     
-    
-    
+
+
+
+
+
