@@ -25,3 +25,8 @@ shakes_macbeth=gutenberg.sents('shakespeare-macbeth.txt')
 shakes_macbeth[1116]
 longest_len=max(len(s) for s in shakes_macbeth)
 [s for s in shakes_macbeth if len(s) == longest_len]
+
+# Web and Chat Text
+from nltk.corpus import webtext
+for fileid in webtext.fileids():
+    print(fileid,webtext.raw(fileid)[:65], '...')
