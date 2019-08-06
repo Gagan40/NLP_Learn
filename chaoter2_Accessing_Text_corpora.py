@@ -479,43 +479,238 @@ word_list.words()
 """
 As another example, suppose you have your own local copy of Penn Treebank (release 3), in C:\corpora. We can use the BracketParseCorpusReader to access this corpus. We specify the corpus_root to be the location of the parsed Wall Street Journal component of the corpus [1], and give a file_pattern that matches the files contained within its subfolders [2] (using forward slashes).
 """
+# *********************************SECTION 1 Completed*************************************#
+
+# *********************************SECTION 2 STARTED**************************************#
+# Conditional Frequency Distributions
+"""
+We saw that given some list mylist of words or other items, FreqDist(mylist) would compute the
+number of occurrences of each item in the list. Here we will generalize this idea.
+
+When the texts of a corpus are divided into several categories, by genre, topic, author, etc,
+we can maintain separate frequency distributions for each category. 
+This will allow us to study systematic differences between the categories. 
+In the previous section we achieved this using NLTK's ConditionalFreqDist data type. 
+A conditional frequency distribution is a collection of frequency distributions,
+each one for a different "condition". The condition will often be the category of the text.
+2.1 depicts a fragment of a conditional frequency distribution having just two conditions, 
+one for news text and one for romance text.
+"""
+
+#************ 2.1 Condition and Events Starts ********************************************
+
+"""
+A frequency distribution counts observable events, such as the appearance of words in a text. 
+A conditional frequency distribution needs to pair each event with a condition. 
+So instead of processing a sequence of words [1], we have to process a sequence of pairs [2]:
+
+"""
+text=['The','Fulton','County','Grand','Jury','said'] #1
+pairs = [('news', 'The'), ('news', 'Fulton'), ('news', 'County'), ...] 
+
+"""
+Each pair has the form (condition, event). 
+If we were processing the entire Brown Corpus by genre there would be 15 conditions
+ (one per genre), and 1,161,192 events (one per word).
+"""
+#****************** 2.1 Condition and Events Ends ********************************************
+
+#****************** 2.2 Counting words by Genre **********************************************
+
+from nltk.corpus import brown
+cfd=nltk.ConditionalFreqDist(
+        (genre,word)
+        for genre in brown.categories()
+        for word in brown.words(categories=genre))
+"""
+# Let's break this down, and look at just two genres, news and romance. 
+For each genre [2], we loop over every word in the genre [3], 
+producing pairs consisting of the genre and the word [1]:
+
+"""
+
+genre_word=[(genre,word)
+for genre in ['news','romance']
+for word in brown.words(categories=genre)]
+len(genre_word) #170576
+
+ 
+# So, as we can see below, pairs at the beginning of the list genre_word will be of the form ('news', word)
+genre_word[:4]  # [('news', 'The'), ('news', 'Fulton'), ('news', 'County'), ('news', 'Grand')]
+
+# while those at the end will be of the form ('romance', word)
+genre_word[-4:] # [('romance', 'afraid'),('romance', 'not'),('romance', "''"),('romance', '.')]
 
 
 
+ # We can now use this list of pairs to create a ConditionalFreqDist, 
+# and save it in a variable cfd. As usual, we can type the name of the variable to inspect it 
+
+cfd=nltk.ConditionalFreqDist(genre_word)
+cfd  # <ConditionalFreqDist with 2 conditions>
+cfd.conditions() # ['news', 'romance']
+cfd.items() # dict_items([('news', FreqDist({'the': 5580, ',': 5188, '.': 4030, 'of': 2849, 'and': 2146, 'to': 2116, 'a': 1993, 'in': 1893, 'for': 943, 'The': 806, ...})), ('romance', FreqDist({',': 3899, '.': 3736, 'the': 2758, 'and': 1776, 'to': 1502, 'a': 1335, 'of': 1186, '``': 1045, "''": 1044, 'was': 993, ...}))])
+
+# Let's access the two conditions, and satisfy ourselves that each is just a frequency distribution:
+print(cfd['news']) # <FreqDist with 14394 samples and 100554 outcomes>
+print(cfd['romance']) # <FreqDist with 8452 samples and 70022 outcomes>
+cfd['romance'].most_common(20) 
+"""
+[(',', 3899),('.', 3736),('the', 2758),('and', 1776),('to', 1502),('a', 1335),('of', 1186),
+ ('``', 1045),("''", 1044),('was', 993),('I', 951),('in', 875),('he', 702),('had', 692),
+ ('?', 690),('her', 651),('that', 583),('it', 573),('his', 559),('she', 496)]
+"""
+cfd['romance']['could'] #  193
+
+#**********End of Section 2.2 Counting words by Genre *************************************#
 
 
 
+#******************Starting Section 2.3 Plotting and Tabulating Distribution**************#
+
+"""
+Apart from combining two or more frequency distributions, and being easy to initialize, 
+a ConditionalFreqDist provides some useful methods for tabulation and plotting.
+
+The plot in 1.1 was based on a conditional frequency distribution reproduced in the code below.
+The condition is either of the words america or citizen [2],
+ and the counts being plotted are the number of times the word occured in a particular speech. It exploits the fact that the filename for each speech, e.g., 1865-Lincoln.txt contains the year as the first four characters [1]. This code generates the pair ('america', '1865') for every instance of a word whose lowercased form starts with america — such as Americans — in the file 1865-Lincoln.txt.
+
+"""
+from nltk.corpus import inaugural
+cfd_inagural=nltk.ConditionalFreqDist(
+        (target,fileid[:4])
+        for fileid in inaugural.fileids()
+        for w in inaugural.words(fileid)
+        for target in ['america','citizen'] 
+        if w.lower().startswith(target))
+
+cfd_inagural.plot(cumulative=True) # Plot 1.1
+
+"""
+The plot in 1.2 was also based on a conditional frequency distribution, reproduced below. 
+This time, the condition is the name of the language and the counts being plotted are derived
+ from word lengths [1]. It exploits the fact that the filename for each language 
+ is the language name followed by '-Latin1' (the character encoding).
+"""
+
+
+from nltk.corpus import udhr
+languages=['Chickasaw', 'English', 'German_Deutsch','Greenlandic_Inuktikut', 'Hungarian_Magyar', 'Ibibio_Efik']
+
+cfd_lang=nltk.ConditionalFreqDist(
+        (lang,len(word))
+        for lang in languages
+        for word in udhr.words(lang+'-Latin1')
+        )
+
+cfd_lang.plot(cumulative=True) # plot 1.2
 
 
 
+"""
+In the plot() and tabulate() methods, we can optionally specify which conditions to display 
+with a conditions= parameter. When we omit it, we get all the conditions. 
+Similarly, we can limit the samples to display with a  samples= parameter. 
+This makes it possible to load a large quantity of data into a conditional frequency distribution, 
+and then to explore it by plotting or tabulating selected conditions and samples. 
+It also gives us full control over the order of conditions and samples in any displays. 
+For example, we can tabulate the cumulative frequency data just for two languages, and for words
+less than 10 characters long, as shown below. We interpret the last cell on the top row to mean
+that 1,638 words of the English text have 9 or fewer letters.
+
+"""
+#************** I am getting difficulties in obtaining acurate results
+from nltk.corpus import brown
+#cfd_brown=nltk.ConditionalFreqDist()
+#brown.categories()[13]
+brown.words(categories='news')
+
+week=['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
+
+temp_brown=nltk.ConditionalFreqDist(
+        (w,cat)
+        for w in week
+        for cat in brown.categories())
+        #for genre in brown.categories() )
+
+
+temp_brown.tabulate(cumulative=True,Sample=week)
+
+temp_brown.tabulate(cumulative=True)
+
+
+temp_brown.plot(cumulative=True,sample=week)
+
+#************** I am getting difficulties in obtaining acurate results
+
+#*************** 2.3 End of plotting and tabulating Distribution **********************************************
 
 
 
+#**********************2.4 Starting Generating Random text with bigram*****************************************
+
+"""
+We can use a conditional frequency distribution to create a table of bigrams (word pairs).
+(We introducted bigrams in 3.) The bigrams() function takes a list of words 
+and builds a list of consecutive word pairs. 
+Remember that, in order to see the result and not a cryptic "generator object", we need to use 
+the list() function:
+"""
+sent=['in', 'the' ,'beginning', 'god' ,'created ','the' ,'heaven' ,'and' ,'then' ,'earth']
+
+list(nltk.bigrams(sent))
+
+"""
+In 2.2, we treat each word as a condition, and for each one we effectively create a frequency distribution over
+the following words. The function generate_model() contains a simple loop to generate text.
+When we call the function, we choose a word (such as 'living') as our initial context, then once inside the loop,
+we print the current value of the variable word, and reset word to be the most likely token in that context 
+(using max()); next time through the loop, we use that word as our new context. 
+As you can see by inspecting the output, this simple approach to text generation tends to get stuck in loops; 
+another method would be to randomly choose the next word from among the available words.
+"""
+
+def generate_model(cfdist,word,num=15):
+    for i in range(num):
+        print(word, end='')
+        word=cfdist[word].max()
+
+text=nltk.corpus.genesis.words('english-kjv.txt')
+bigrams=nltk.bigrams(text)
+cfd=nltk.ConditionalFreqDist(bigrams)
+
+cfd['living']
+
+"""
+Generating Random Text: this program obtains all bigrams from the text of the book of Genesis, then constructs a conditional frequency distribution to record which words are most likely to follow a given word; e.g., after the word living, the most likely word is creature; the generate_model() function uses this data, and a seed word, to generate random text.
+
+Conditional frequency distributions are a useful data structure for many NLP tasks. Their commonly-used methods are summarized in 2.1.
+
+"""
+#**************Table 2.1*************************************************
+"""
+NLTK's Conditional Frequency Distributions: commonly-used methods and idioms for defining, accessing, and visualizing a conditional frequency distribution of counters.
+
+Example	Description
+cfdist = ConditionalFreqDist(pairs)	create a conditional frequency distribution from a list of pairs
+cfdist.conditions()	the conditions
+cfdist[condition]	the frequency distribution for this condition
+cfdist[condition][sample]	frequency for the given sample for this condition
+cfdist.tabulate()	tabulate the conditional frequency distribution
+cfdist.tabulate(samples, conditions)	tabulation limited to the specified samples and conditions
+cfdist.plot()	graphical plot of the conditional frequency distribution
+cfdist.plot(samples, conditions)	graphical plot limited to the specified samples and conditions
+cfdist1 < cfdist2	test if samples in cfdist1 occur less frequently than in  cfdist2
+
+"""
+#**************Table 2.1*************************************************
+ 
+
+#******** End Section 2.4 Generating Random Text with bigram**************
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ 
 
 
 
