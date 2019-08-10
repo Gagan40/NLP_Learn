@@ -1112,31 +1112,366 @@ http://en.wikipedia.org/wiki/Rotokas_language
 
 #************End of Sction 4.4 Shoebox and toolboxLexicon*******************************#
 
+#************ Starting of Section 5 Word Net *******************************************#
+
+"""
+WordNet is a semantically-oriented dictionary of English, similar to a traditional thesaurus 
+but with a richer structure. NLTK includes the English WordNet, with 155,287 words and 
+117,659 synonym sets. We'll begin by looking at synonyms and how they are accessed in WordNet.
+"""
+#******************Starting Section 5.1  Senses and Synonyms******************************#
+"""
+Consider the sentence in (1a). If we replace the word motorcar in (1a) 
+by automobile, to get (1b), the meaning of the sentence stays pretty much the same:
+
+(1)		
+a.		Benz is credited with the invention of the motorcar.
+
+b.		Benz is credited with the invention of the automobile.
+
+
+Since everything else in the sentence has remained unchanged, we can conclude that the 
+words motorcar and automobile have the same meaning, i.e. they are synonyms. 
+We can explore these words with the help of WordNet:
+
+ """	
+from nltk.corpus import wordnet as wn
+wn.synsets('motorcar') # [Synset('car.n.01')]
+
+"""
+Thus, motorcar has just one possible meaning and it is identified as car.n.01, 
+the first noun sense of car. The entity car.n.01 is called a synset, or "synonym set", 
+a collection of synonymous words (or "lemmas"):
+"""
+wn.synset('car.n.01').lemma_names() # ['car', 'auto', 'automobile', 'machine', 'motorcar']
+
+"""
+Each word of a synset can have several meanings, e.g., car can also signify a train carriage, 
+a gondola, or an elevator car. However, we are only interested in the single meaning that is 
+common to all words of the above synset. Synsets also come with a prose definition 
+and some example sentences:
+"""
+wn.synset('car.n.01').definition()
+# 'a motor vehicle with four wheels; usually propelled by an internal combustion engine'
+wn.synset('car.n.01').examples() # ['he needs a car to get to work']
+
+"""
+Although definitions help humans to understand the intended meaning of a synset,
+the words of the synset are often more useful for our programs. 
+To eliminate ambiguity, we will identify these words as car.n.01.automobile,  
+car.n.01.motorcar, and so on. This pairing of a synset with a word is called a lemma. 
+We can get all the lemmas for a given synset [1], look up a particular lemma [2], 
+get the synset corresponding to a lemma [3], and get the "name" of a lemma
+"""
+
+wn.synset('car.n.01').lemmas()
+
+# [Lemma('car.n.01.car'),Lemma('car.n.01.auto'),Lemma('car.n.01.automobile'),Lemma('car.n.01.machine'),Lemma('car.n.01.motorcar')]
+
+wn.lemma('car.n.01.automobile') # Lemma('car.n.01.automobile')
+
+wn.lemma('car.n.01.automobile').synset()  #  Synset('car.n.01')
+
+wn.lemma('car.n.01.automobile').name() # 'automobile'
+
+# Unlike the word motorcar, which is unambiguous and has one synset, 
+#the word car is ambiguous, having five synsets:
+
+wn.synsets('car')
+"""
+[Synset('car.n.01'),Synset('car.n.02'),Synset('car.n.03'),
+Synset('car.n.04'),Synset('cable_car.n.01')]
+"""
+for synset in wn.synsets('car'):
+     print(synset.lemma_names())
+
+"""
+['car', 'auto', 'automobile', 'machine', 'motorcar']
+['car', 'railcar', 'railway_car', 'railroad_car']
+['car', 'gondola']
+['car', 'elevator_car']
+['cable_car', 'car']
+"""
+# For convenience, we can access all the lemmas involving the word car as follows.
+
+wn.lemmas('car')
+"""
+[Lemma('car.n.01.car'),Lemma('car.n.02.car'),Lemma('car.n.03.car'),
+ Lemma('car.n.04.car'),Lemma('cable_car.n.01.car')]
+"""
+wn.synsets('dish')
+"""
+[Synset('dish.n.01'),
+ Synset('dish.n.02'),
+ Synset('dish.n.03'),
+ Synset('smasher.n.02'),
+ Synset('dish.n.05'),
+ Synset('cup_of_tea.n.01'),
+ Synset('serve.v.06'),
+ Synset('dish.v.02')]
+"""
+for synset in wn.synsets('dish'):
+    print(synset.lemma_names())
+"""    
+['dish']
+['dish']
+['dish', 'dishful']
+['smasher', 'stunner', 'knockout', 'beauty', 'ravisher', 'sweetheart', 'peach', 'lulu', 'looker', 'mantrap', 'dish']
+['dish', 'dish_aerial', 'dish_antenna', 'saucer']
+['cup_of_tea', 'bag', 'dish']
+['serve', 'serve_up', 'dish_out', 'dish_up', 'dish']
+['dish']
+
+"""
+
+for synset in wn.synsets('love'):
+    print(synset.lemma_names())
+
+"""
+['love']
+['love', 'passion']
+['beloved', 'dear', 'dearest', 'honey', 'love']
+['love', 'sexual_love', 'erotic_love']
+['love']
+['sexual_love', 'lovemaking', 'making_love', 'love', 'love_life']
+['love']
+['love', 'enjoy']
+['love']
+['sleep_together', 'roll_in_the_hay', 'love', 'make_out', 'make_love', 'sleep_with', 'get_laid', 'have_sex', 'know', 'do_it', 'be_intimate', 'have_intercourse', 'have_it_away', 'have_it_off', 'screw', 'fuck', 'jazz', 'eff', 'hump', 'lie_with', 'bed', 'have_a_go_at_it', 'bang', 'get_it_on', 'bonk']
+"""
+#***************End of Section 5.1 senses and Synonyms***************************#
+
+#***************Starting of Section 5.2 The wordnet Hierarchy********************#
+
+
+"""
+WordNet synsets correspond to abstract concepts, and they don't always 
+have corresponding words in English. These concepts are linked together in a hierarchy.
+Some concepts are very general, such as Entity, State, Event — these are called 
+unique beginners or root synsets. Others, such as gas guzzler and hatchback, 
+are much more specific. A small portion of a concept hierarchy is illustrated in 5.1.
+
+                     # Artefact
+                     
+                                        ## motor vehical
+                                        
+                ##motorcar()                                ##go kart         ##truck  
+                *hatch-back *compact *gas guzzlar
+                
+                
+Fragment of WordNet Concept Hierarchy: nodes correspond to synsets; 
+edges indicate the hypernym/hyponym relation, i.e. the 
+relation between superordinate and subordinate concepts.
+
+
+"""
+"""
+WordNet makes it easy to navigate between concepts. For example, given a concept like motorcar,
+we can look at the concepts that are more specific; the (immediate) hyponyms
+
+"""
+motorcar=wn.synset('car.n.01')
+types_of_motorcar=motorcar.hyponyms()
+types_of_motorcar[0] # Synset('ambulance.n.01')
+sorted(lemma.name() for synset in types_of_motorcar for lemma in synset.lemmas())
+"""
+['Model_T',
+ 'S.U.V.',
+ 'SUV',
+ 'Stanley_Steamer',
+ 'ambulance',
+ 'beach_waggon',
+ 'beach_wagon',
+ 'bus',
+ 'cab',
+ 'compact',
+ 'compact_car',
+ 'convertible',
+ 'coupe',
+"""
+
+"""
+We can also navigate up the hierarchy by visiting hypernyms. Some words have multiple paths, 
+because they can be classified in more than one way. 
+There are two paths between car.n.01 and entity.n.01 because wheeled_vehicle.n.01 can be 
+classified as both a vehicle and a container.
+
+"""
+motorcar.hypernyms() # [Synset('motor_vehicle.n.01')]
+paths=motorcar.hypernym_paths()
+len(paths) # 2
+
+[synset.name() for synset in paths[0]]
+
+"""
+['entity.n.01','physical_entity.n.01','object.n.01','whole.n.02','artifact.n.01','instrumentality.n.03',
+ 'container.n.01','wheeled_vehicle.n.01','self-propelled_vehicle.n.01','motor_vehicle.n.01', 'car.n.01']
+
+"""
+[synset.name() for synset in paths[1]]
+
+"""
+['entity.n.01',
+ 'physical_entity.n.01',
+ 'object.n.01',
+ 'whole.n.02',
+ 'artifact.n.01',
+ 'instrumentality.n.03',
+ 'conveyance.n.03',
+ 'vehicle.n.01',
+ 'wheeled_vehicle.n.01',
+ 'self-propelled_vehicle.n.01',
+ 'motor_vehicle.n.01',
+ 'car.n.01']
+
+"""
+# We can get the most general hypernyms (or root hypernyms) of a synset as follows:
+motorcar.hypernyms() # [Synset('motor_vehicle.n.01')]
+
+nltk.app.wordnet()
+
+#************ End of Section 5.2 The wordnet hierarchy*****************************#
+
+
+#********Starting of Section 5.3 More Lexical Relations******************************#
+"""
+
+Hypernyms and hyponyms are called lexical relations because they relate one synset to another. 
+These two relations navigate up and down the "is-a" hierarchy. Another important way to navigate 
+the WordNet network is from items to their components (meronyms) or to the things they are 
+contained in (holonyms). For example, the parts of a tree are its trunk, crown, and so on; 
+the part_meronyms(). The substance a tree is made of includes heartwood and sapwood; 
+the substance_meronyms(). A collection of trees forms a forest; the member_holonyms():
+"""
+wn.synset('tree.n.01').part_meronyms()
+
+# [Synset('burl.n.02'),Synset('crown.n.07'),Synset('limb.n.02'),Synset('stump.n.01'),Synset('trunk.n.01')]
+
+wn.synset('tree.n.01').substance_meronyms() # Synset('sapwood.n.01')]
+
+wn.synset('tree.n.01').member_holonyms() #  [Synset('forest.n.01')]
+
+"""
+To see just how intricate things can get, consider the word mint, which has several closely-related
+senses. We can see that mint.n.04 is part of mint.n.02 and the substance from which mint.n.05 
+is made.
+"""
+for synsets in wn.synsets('mint',wn.NOUN):
+    print(synset.name()+'**'+synset.definition())
+    
+"""
+batch.n.02: (often followed by `of') a large number or amount or extent
+mint.n.02: any north temperate plant of the genus Mentha with aromatic leaves and
+           small mauve flowers
+mint.n.03: any member of the mint family of plants
+mint.n.04: the leaves of a mint plant used fresh or candied
+mint.n.05: a candy that is flavored with a mint oil
+mint.n.06: a plant where money is coined by authority of the government
+"""    
+  
+wn.synset('mint.n.04').part_holonyms() # Synset('mint.n.02')]
+wn.synset('mint.n.04').substance_holonyms() # [Synset('mint.n.05')]
+
+"""
+There are also relationships between verbs. For example, the act of walking involves the act of
+stepping, so walking entails stepping. Some verbs have multiple entailments:
+"""
+wn.synset('walk.v.01').entailments() # [Synset('step.v.01')]
+wn.synset('eat.v.01').entailments() # [Synset('chew.v.01'), Synset('swallow.v.01')]
+wn.synset('tease.v.03').entailments() # [Synset('arouse.v.07'), Synset('disappoint.v.01')]
+
+# Some lexical relationships hold between lemmas, e.g., antonymy:
+wn.lemma('supply.n.02.supply').antonyms() #  [Lemma('demand.n.02.demand')]
+wn.lemma('rush.v.01.rush').antonyms() # [Lemma('linger.v.04.linger')]
+wn.lemma('horizontal.a.01.horizontal').antonyms() # [Lemma('vertical.a.01.vertical'), Lemma('inclined.a.02.inclined')]
+wn.lemma('staccato.r.01.staccato').antonyms() # [Lemma('legato.r.01.legato')]
+
+"""
+You can see the lexical relations, and the other methods defined on a synset, using dir(), 
+for example: dir(wn.synset('harmony.n.02')).
+
+
+"""
+dir(wn.synset('harmony.n.02'))
+"""
+['__class__',
+ '__delattr__',
+ '__dict__',
+ '__dir__',
+ '__doc__',
+ '__eq__',
+ '__format__',
+ '__ge__',
+ '__getattribute__',
+ '__gt__',
+ '__hash__',
+ '__init__',
+ '__init_subclass__',
+ '__le__',
+"""
+
+#********End of  Section 5.3 More Lexical Relations******************************#
 
 
 
+#********Starting of Section 5.4 Semantic Similarity******************************#
+"""
+We have seen that synsets are linked by a complex network of lexical relations.
+Given a particular synset, we can traverse the WordNet network to find synsets 
+with related meanings. Knowing which words are semantically related is useful for 
+indexing a collection of texts, so that a search for a general term like vehicle will 
+match documents containing specific terms like limousine.
+
+Recall that each synset has one or more hypernym paths that link it to a 
+root hypernym such as entity.n.01. Two synsets linked to the same root may have several 
+hypernyms in common (cf 5.1). If two synsets share a very specific hypernym —
+ one that is low down in the hypernym hierarchy — they must be closely related.
+"""
+
+right=wn.synset('right_whale.n.01')
+orca=wn.synset('orca.n.01')
+minke=wn.synset('minke_whale.n.01')
+tortoise=wn.synset('tortoise.n.01')
+novel=wn.synset('novel.n.01')
+right.lowest_common_hypernyms(minke) # [Synset('baleen_whale.n.01')]
+right.lowest_common_hypernyms(orca)  # [Synset('whale.n.02')]
+right.lowest_common_hypernyms(tortoise) # [Synset('vertebrate.n.01')]
+right.lowest_common_hypernyms(novel) # [Synset('entity.n.01')]
 
 
+"""
+Of course we know that whale is very specific (and baleen whale even more so), 
+while vertebrate is more general and entity is completely general. 
+We can quantify this concept of generality by looking up the depth of each synset:
 
+"""
+wn.synset('baleen_whale.n.01').min_depth() # 14
+wn.synset('whale.n.02').min_depth() # 13
+wn.synset('vertebrate.n.01').min_depth() # 8
+wn.synset('entity.n.01').min_depth() # 0
 
+"""
+Similarity measures have been defined over the collection of WordNet synsets which 
+incorporate the above insight. For example, path_similarity assigns a score in the range 0–1 based
+on the shortest path that connects the concepts in the hypernym hierarchy 
+(-1 is returned in those cases where a path cannot be found). 
+Comparing a synset with itself will return 1. Consider the following similarity scores, 
+relating right whale to minke whale, orca, tortoise, and novel. Although the numbers won't 
+mean much, they decrease as we move away from the semantic space of sea creatures toinanimate objects.
 
+"""
+right.path_similarity(orca) # 0.16666666666666666
+right.path_similarity(minke) #  0.25
+right.path_similarity(tortoise) # 0.07692307692307693
+right.path_similarity(novel) # 0.043478260869565216
 
+"""
+Several other similarity measures are available; you can type help(wn) for more information. 
+NLTK also includes VerbNet, a hierarhical verb lexicon linked to WordNet. 
+It can be accessed with nltk.corpus.verbnet.
+"""
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#********End of Section 5.4 Semantic Similarity******************************#
 
 
 
