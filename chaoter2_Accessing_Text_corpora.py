@@ -711,40 +711,406 @@ cfdist1 < cfdist2	test if samples in cfdist1 occur less frequently than in  cfdi
 
 
  
+#**************Section 3 is Python Function and I am skipping this***********
 
+#**************Section 4 Lexical Resources Started*********************************************#
 
+"""
+A lexicon, or lexical resource, is a collection of words and/or phrases along with associated 
+information such as part of speech and sense definitions. 
+Lexical resources are secondary to texts, and are usually created and enriched with the help of
+texts. For example, if we have defined a text my_text, 
+then vocab = sorted(set(my_text)) builds the vocabulary of my_text, 
+while word_freq = FreqDist(my_text) counts the frequency of each word in the text. 
+Both of vocab and word_freq are simple lexical resources. 
+Similarly, a concordance like the one we saw in 1 gives us information about word usage 
+that might help in the preparation of a dictionary. 
+Standard terminology for lexicons is illustrated in 4.1.
 
+A lexical entry consists of a headword (also known as a lemma) along with additional information
+such as the part of speech and the sense definition. Two distinct words having the same spelling
+are called homonyms.
 
+The simplest kind of lexicon is nothing more than a sorted list of words. 
+Sophisticated lexicons include complex structure within and across the individual entries. 
+In this section we'll look at some lexical resources included with NLTK.
 
+"""
+#**************Section 4.1 Wordlist Corpora *********************************************#
 
+"""
+NLTK includes some corpora that are nothing more than wordlists.
+The Words Corpus is the /usr/share/dict/words file from Unix, used by some spell checkers. 
+We can use it to find unusual or mis-spelt words in a text corpus, as shown in 4.2.
+"""
+import nltk
+def unusual_words(text):
+    text_vocab= set(w.lower() for w in text if w.isalpha())
+    english_vocab=set(w.lower() for w in nltk.corpus.words.words())
+    unusual=text_vocab-english_vocab
+    return(sorted(unusual))
+    
+unusual_words(nltk.corpus.gutenberg.words('austen-sense.txt'))
 
-
-
+unusual_words(nltk.corpus.nps_chat.words())
  
 
 
+"""
+There is also a corpus of stopwords, that is, high-frequency words
+ like the, to and also that 
+ we sometimes want to filter out of a document before further processing. 
+Stopwords usually have little lexical content, and their presence in a text fails to distinguish
+ it from other texts.
+
+"""
+
+from nltk.corpus import stopwords
+stopwords.words('french') # ['au','aux','avec','ce','ces','dans','de','des','du','elle','en','et','eux','il','ils','je','la','le','les',...]
+
+
+# Let's define a function to compute what fraction of words in a text are not in the stopwords list:
+
+def content_fraction(text):
+    stopwords=nltk.corpus.stopwords.words('english')
+    content=[w for w in text if w.lower() not in stopwords]
+    return len(content)/len(text)
+
+content_fraction(nltk.corpus.reuters.words()) # 0.735240435097661
+
+#Thus, with the help of stopwords we filter out over a quarter of the words of the text.
+# Notice that we've combined two different kinds of corpus here, *
+#using a lexical resource to filter the content of a text corpus.
+
+
+"""
+***************************************************************************************
+Word Puzzle: a grid of randomly chosen letters with rules for creating words out of the letters; 
+this puzzle is known as "Target."
+
+How many words of four letters and more can you make from the E G I V R V O N L
+Each letter may be used once per word
+Each word contain the center letter R 
+There must be a 9 letter word
+No Plurals like ending "s", no proper names no forign words
+***************************************************************************************
+A wordlist is useful for solving word puzzles, such as the one in 4.3. 
+Our program iterates through every word and, for each one, checks whether 
+it meets the conditions. It is easy to check obligatory letter [2] and 
+length constraints [1] (and we'll only look for words with six or more letters here). 
+It is trickier to check that candidate solutions only use combinations of the supplied letters,
+especially since some of the supplied letters appear twice (here, the letter v). 
+The FreqDist comparison method [3] permits us to check that the frequency of each letter 
+in the candidate word is less than or equal to the frequency of the corresponding letter
+in the puzzle.
+
+
+"""
+puzzle_letters=nltk.FreqDist('egivrvonl')
+obligatory='r'
+wordlist=nltk.corpus.words.words()
+[w for w in wordlist if len(w)>=6 
+ and obligatory in w 
+ and nltk.FreqDist(w)<= puzzle_letters]
+"""
+['glover','gorlin','govern','grovel','ignore','involver','lienor','linger','longer',
+'lovering','noiler','overling','region','renvoi','revolving','ringle','roving','violer','virole']
+"""
+
+"""
+One more wordlist corpus is the Names corpus, containing 8,000 first names categorized by gender.
+The male and female names are stored in separate files. 
+Let's find names which appear in both files, i.e. names that are ambiguous for gender:
+
+"""
+names=nltk.corpus.names
+names.fileids() # ['female.txt', 'male.txt']
+male_names=names.words('male.txt')
+female_names=names.words('female.txt')
+[w for w in male_names if w in female_names] # There are 365 ambigous names for genders
+
+"""
+It is well known that names ending in the letter a are almost always female. 
+We can see this and some other patterns in the graph in 4.4, produced by the following code. 
+Remember that name[-1] is the last letter of name.
+
+"""
+cfd_names=nltk.ConditionalFreqDist(
+        (fileid,name[-1])
+        for fileid in names.fileids()
+        for name in names.words(fileid))
+
+cfd_names.plot()
+
+"""
+Conditional Frequency Distribution: this plot shows the number of female and male names ending 
+with each letter of the alphabet; most names ending with a, e or i are female; 
+names ending in h and l are equally likely to be male or female; 
+names ending in k, o, r, s, and t are likely to be male.
+
+
+"""
+
+#********************End of Section 4.1 Wordlist Corpora****************************#
+
+#******************* Starting section 4.2 Pronouncing Dictionary********************#
+
+"""
+A slightly richer kind of lexical resource is a table (or spreadsheet), 
+containing a word plus some properties in each row. 
+NLTK includes the CMU Pronouncing Dictionary for US English, which was designed for use by 
+speech synthesizers.
+""" 
+entries=nltk.corpus.cmudict.entries()
+len(entries) # 133737
+for entry in entries[42371:42379]:
+    print(entry)
+
+"""
+('fir', ['F', 'ER1'])
+('fire', ['F', 'AY1', 'ER0'])
+('fire', ['F', 'AY1', 'R'])
+('firearm', ['F', 'AY1', 'ER0', 'AA2', 'R', 'M'])
+('firearm', ['F', 'AY1', 'R', 'AA2', 'R', 'M'])
+('firearms', ['F', 'AY1', 'ER0', 'AA2', 'R', 'M', 'Z'])
+('firearms', ['F', 'AY1', 'R', 'AA2', 'R', 'M', 'Z'])
+('fireball', ['F', 'AY1', 'ER0', 'B', 'AO2', 'L'])
+
+
+For each word, this lexicon provides a list of phonetic codes — distinct labels for
+each contrastive sound — known as phones. 
+Observe that fire has two pronunciations (in US English): 
+ the one-syllable F AY1 R, and the 
+ two-syllable F AY1 ER0. 
+ The symbols in the CMU Pronouncing Dictionary are from the Arpabet, 
+ described in more detail at http://en.wikipedia.org/wiki/Arpabet
+"""
+
+"""
+Each entry consists of two parts, and we can process these individually using a 
+more complex version of the for statement. 
+Instead of writing for entry in entries:, we replace entry with two variable names, 
+word, pron [1]. Now, each time through the loop, word is assigned the first part of the entry, 
+and pron is assigned the second part of the entry:
+
+"""
+for word,pron in entries:
+    if len(pron)==3:
+        ph1,ph2,ph3=pron
+        if ph1 == 'P' and ph3=='T':
+            print(word,ph2,end='')
+
+
+"""
+pait EY1pat AE1pate EY1patt AE1peart ER1peat IY1peet IY1peete IY1pert ER1pet EH1pete 
+IY1pett EH1piet IY1piette IY1pit IH1pitt IH1pot AA1pote OW1pott AA1pout AW1puett UW1purt 
+ER1put UH1putt AH1
+"""
+"""
+The above program scans the lexicon looking for entries whose pronunciation consists of three
+phones [2]. If the condition is true, it assigns the contents of pron to three new variables 
+ph1, ph2 and ph3. Notice the unusual form of the statement which does that work [3].
+"""
+
+"""
+Here's another example of the same for statement, this time used inside a list comprehension. 
+This program finds all words whose pronunciation ends with a syllable sounding like nicks. 
+You could use this method to find rhyming words
+"""
+syllable=['N','IH0','K','S']
+[word for word, pron in entries if pron[-4:] == syllable]
+
+"""
+Notice that the one pronunciation is spelt in several ways: nics, niks, nix, even ntic's with 
+a silent t, for the word atlantic's. Let's look for some other mismatches between pronunciation
+and writing. Can you summarize the purpose of the following examples and explain how they work?
+"""
+[w for w, pron in entries if pron[-1]=='M'and w[-1]=='n']
+# ['autumn', 'column', 'condemn', 'damn', 'goddamn', 'hymn', 'solemn']
+sorted(set(w[:2]for w,pron in entries if pron[0]=='N'and w[0] !='n'))
+#['gn', 'kn', 'mn', 'pn']
+"""
+The phones contain digits to represent primary stress (1), secondary stress (2) 
+and no stress (0). As our final example, we define a function to extract the stress digits 
+and then scan our lexicon to find words having a particular stress pattern.
+"""
+def stress(pron):
+    return[char for phone in pron for char in phone if char.isdigit()]
+[w for w, pron in entries if stress(pron)==['0','1','0','2','0']]
+"""
+'celebratory','coagulating','cogenerator','cogenerators','collaborated','collaborated',
+ 'collaborating','collaborative','collaborator','collaborators','collectivism','commemorated',
+ 'commemorating','commemorative','commercialism','commercializing','communicated','communicating',
+ 
+"""
+
+[w for w, pron in entries if stress(pron) == ['0', '2', '0', '1', '0']]
 
 
 
+#['abbreviation', 'abbreviations','abomination','abortifacient','abortifacients',...]
+ 
+# NOTE
+"""
+
+A subtlety of the above program is that our user-defined function stress() is invoked 
+inside the condition of a list comprehension. There is also a doubly-nested for loop. 
+There's a lot going on here and you might want to return to this once you've had 
+more experience using list comprehensions.""
+
+"""
+
+"""
+We can use a conditional frequency distribution to help us find minimally-contrasting sets of 
+words. Here we find all the p-words consisting of three sounds [2], and group them according 
+to their first and last sounds. 
+"""
+
+p3=[(pron[0]+ '-' +pron[2],word)
+for(word,pron)in entries
+if pron[0]=='P' and len(pron)==3]
+
+cfd_pron=nltk.ConditionalFreqDist(p3)
+for template in sorted(cfd_pron.conditions()):
+    if len(cfd_pron[template]) > 10:
+        words=sorted(cfd_pron[template])
+        wordstring =' '.join(words)
+        print(template,wordstring[:70] + "...")
 
 
+"""
+Rather than iterating over the whole dictionary, we can also access it by looking up particular
+words. We will use Python's dictionary data structure, which we will study systematically in 3.
+We look up a dictionary by giving its name followed by a key (such as the word 'fire')
+inside square brackets [1].
+"""
+import nltk
+pron_dict=nltk.corpus.cmudict.dict()
+pron_dict['fire']
+pron_dict['blog']=[['B','L','AAI','G']]
+pron_dict['blog']
+
+"""
+If we try to look up a non-existent key [2], we get a KeyError. 
+This is similar to what happens when we index a list with an integer that is too large, 
+producing an IndexError. The word blog is missing from the pronouncing dictionary, 
+so we tweak our version by assigning a value for this key [3] 
+(this has no effect on the NLTK corpus; next time we access it, blog will still be absent).
+
+"""
 
 
+"""
+We can use any lexical resource to process a text, e.g., to filter out words having some 
+lexical property (like nouns), or mapping every word of the text. 
+For example, the following text-to-speech function looks up each word of 
+the text in the pronunciation dictionary.
+"""
+
+text=['natural','language','processing']
+[ph for w in text for ph in pron_dict[w][0]]
+
+#['N','AE1','CH','ER0','AH0', 'L','L','AE1','NG','G','W', 'AH0', 'JH','P','R','AA1','S','EH0','S','IH0','NG']
+
+# ****************************END Section 4.2 A pronouncing Dictionary******************#
 
 
+# **********Starting Section 4.3 Comparative Wordlist***********************************#
+"""
+Another example of a tabular lexicon is the comparative wordlist. 
+NLTK includes so-called Swadesh wordlists, lists of about 200 common words in several languages.
+The languages are identified using an ISO 639 two-letter code.
+"""
+from nltk.corpus import swadesh
+swadesh.fileids() # ['be','bg','bs','ca','cs','cu','de','en','es','fr','hr','it','la','mk','nl','pl',pt','ro','ru','sk','sl','sr','sw','uk']
+
+swadesh.words('en') # ['I', 'you (singular), thou','he', 'we', 'you (plural)','they', 'this', 'that', 'here',...]
+
+"""
+We can access cognate words from multiple languages using the entries() method,
+specifying a list of languages. With one further step we can convert this into 
+a simple dictionary (we'll learn about dict() in 3).
+"""
+fr2en=swadesh.entries(['fr','en']) # French-English
+fr2en # [('je', 'I'),('tu, vous', 'you (singular), thou'),('il', 'he'),('nous', 'we'),('vous', 'you (plural)'),('ils, elles', 'they') ...]
+translate=dict(fr2en)
+translate['chien'] #  'dog'
+translate['jeter'] # 'throw'
+
+"""
+We can make our simple translator more useful by adding other source languages. 
+Let's get the German-English and Spanish-English pairs, convert each to a dictionary 
+using dict(), then update our original translate dictionary with these additional mappings:
+
+"""
+de2en = swadesh.entries(['de','en']) # Geman -English
+es2en = swadesh.entries(['es','en']) # Spanish- English
+translate.update(dict(de2en))
+translate.update(dict(es2en))
+
+translate['Hund'] # 'dog'
+translate['perro'] # 'dog'
+
+# We can compare words in various Germanic and Romance languages:
+
+languages=['en', 'de', 'nl', 'es', 'fr', 'pt', 'la']
+for i in [139,140,141,142]:
+    print(swadesh.entries(languages)[i])
+
+"""
+('say', 'sagen', 'zeggen', 'decir', 'dire', 'dizer', 'dicere')
+('sing', 'singen', 'zingen', 'cantar', 'chanter', 'cantar', 'canere')
+('play', 'spielen', 'spelen', 'jugar', 'jouer', 'jogar, brincar', 'ludere')
+('float', 'schweben', 'zweven', 'flotar', 'flotter', 'flutuar, boiar', 'fluctuare')
+"""
+
+#*******************End of Section 4.3 Comparative Wordlist ******************************#
+
+#*******************Starting of Section 4.4 Shoebox and toolbox lexicon*******************#
+
+"""
+Perhaps the single most popular tool used by linguists for managing data is Toolbox,
+previously known as Shoebox since it replaces the field linguist's traditional shoebox 
+full of file cards. Toolbox is freely downloadable from  http://www.sil.org/computing/toolbox/.
+
+A Toolbox file consists of a collection of entries, where each entry is made up of one or more
+fields. Most fields are optional or repeatable, which means that this kind of lexical resource
+cannot be treated as a table or spreadsheet.
+
+Here is a dictionary for the Rotokas language. We see just the first entry, for the word
+kaa meaning "to gag":
+"""
+from nltk.corpus import toolbox
+toolbox.entries('rotokas.dic') 
+"""
+[('kaa', [('ps', 'V'), ('pt', 'A'), ('ge', 'gag'), ('tkp', 'nek i pas'),
+('dcsv', 'true'), ('vx', '1'), ('sc', '???'), ('dt', '29/Oct/2005'),
+('ex', 'Apoka ira kaaroi aioa-ia reoreopaoro.'),
+('xp', 'Kaikai i pas long nek bilong Apoka bikos em i kaikai na toktok.'),
+('xe', 'Apoka is gagging from food while talking.')]), ...]
+"""
+"""
+Entries consist of a series of attribute-value pairs, like ('ps', 'V') to indicate that 
+the part-of-speech is 'V' (verb), and ('ge', 'gag') to indicate that the gloss-into-English 
+is 'gag'. The last three pairs contain an example sentence in Rotokas and its translations 
+into Tok Pisin and English.
+
+The loose structure of Toolbox files makes it hard for us to do much more with them at this
+stage. XML provides a powerful way to process this kind of corpus and we will return to this 
+topic in 11..
 
 
+"""
 
+# Note
+"""
+The Rotokas language is spoken on the island of Bougainville, Papua New Guinea. 
+This lexicon was contributed to NLTK by Stuart Robinson.
+Rotokas is notable for having an inventory of just 12 phonemes (contrastive sounds), 
+http://en.wikipedia.org/wiki/Rotokas_language
+"""
 
-
-
-
-
-
-
-
-
-
+#************End of Sction 4.4 Shoebox and toolboxLexicon*******************************#
 
 
 
